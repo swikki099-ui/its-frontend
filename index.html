@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #ec4899;
+            --bg-color: #f3f4f6;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --shadow-md: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
+            --border-rad: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #e0e7ff 0%, #fce7f3 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            background-attachment: fixed;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; position: relative; }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px; /* Sharper */
+            padding: 12px; /* Reduced from 24 */
+            margin-bottom: 12px; /* Reduced from 25 */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section-title {
+            font-size: 1.1rem; /* Smaller */
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+
+        /* Forms & Inputs */
+        input, select {
+            width: 100%; padding: 10px; margin: 5px 0;
+            border-radius: 6px; border: 1px solid #d1d5db;
+            font-size: 0.95rem; background: rgba(255,255,255,0.9);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            color: white; border: none; padding: 10px 18px; width: 100%;
+            border-radius: 6px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Login Screen */
+        #login-page {
+            max-width: 360px; margin: 10vh auto; text-align: center;
+        }
+        #login-page h2 { font-weight: 800; font-size: 1.6rem; margin-bottom: 15px; color: var(--primary); }
+
+        /* Dashboard Header */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header h2 { font-size: 1.6rem; font-weight: 800; color: #1e1b4b; }
+
+        /* Grids */
+        .flex-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+        
+        /* Nested Info Grids */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9rem; }
+        .info-label { font-weight: 600; color: var(--text-muted); }
+        .info-value { color: var(--text-main); font-weight: 500; word-wrap: break-word; }
+
+        /* Monthly Attendance Cards (The Column Setup) */
+        .monthly-grid {
+            display: flex; flex-direction: column;
+            gap: 10px; margin-top: 10px;
+        }
+        .day-card {
+            background: #ffffff; border-radius: 8px; padding: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--glass-border);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .day-card h4 {
+            border-bottom: 2px solid var(--bg-color); padding-bottom: 5px; 
+            color: var(--primary); margin: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;
+        }
+        .lectures-grid {
+            display: flex; gap: 8px;
+            overflow-x: auto; padding-bottom: 6px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .lectures-grid::-webkit-scrollbar { height: 4px; }
+        .lectures-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .lec-card {
+            min-width: 150px; /* Reduced from 250px so they all fit without harsh scrolling */
+            flex-shrink: 0;
+            background: #f8fafc; padding: 8px; border-radius: 6px;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .lec-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .lec-code { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
+        .lec-meta { font-size: 0.75rem; color: var(--text-muted); line-height: 1.2; }
+        
+        .att-status { padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
+        .status-p { background: #dcfce7; color: #166534; }
+        .status-a { background: #fee2e2; color: #991b1b; }
+
+        /* Summary Stats Row */
+        .summary-stats { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+        .stat-box {
+            flex: 1; min-width: 120px; text-align: center; padding: 20px;
+            border-radius: 12px; background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.9);
+        }
+        .stat-box.green { background: linear-gradient(135deg, #dcfce7, #bbf7d0); }
+        .stat-box.red { background: linear-gradient(135deg, #fee2e2, #fecaca); }
+        .stat-box.yellow { background: linear-gradient(135deg, #fef9c3, #fde047); }
+        .stat-box h4 { font-size: 0.9rem; color: #4b5563; margin-bottom: 8px; font-weight: 600; }
+        .stat-box .val { font-size: 2.2rem; font-weight: 800; color: #111827; }
+
+        /* Tables (Fallback for tightly packed stuff like Overall Attendance) */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #f3f4f6; }
+        th { background: #f8fafc; font-weight: 600; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:last-child td { border-bottom: none; }
+        td b { color: var(--primary); }
+
+        /* Notifications */
+        .notif-item { padding: 15px; border-radius: 10px; background: #fff; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .notif-badge { font-size: 0.75rem; padding: 3px 10px; border-radius: 12px; margin-left: 10px; font-weight: 700; text-transform: uppercase;}
+        .notif-read { background: #f1f5f9; color: #64748b; }
+        .notif-unread { background: #fee2e2; color: #dc2626; }
+        
+        .loader { display: none; margin: 40px auto; border: 4px solid rgba(79, 70, 229, 0.2); border-top: 4px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Hide elements on load */
+        #dashboard, #dash-content { display: none; }
+        
+        /* Top action row */
+        .action-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Login Screen -->
+    <div id="login-page" class="card">
+        <h2>Welcome Back</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">Sign in to access your student portal</p>
+        <form id="login-form">
+            <input type="email" id="email" placeholder="Email Address" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button class="btn" type="submit" style="margin-top: 10px;">Login securely</button>
+            <div id="login-error" style="color: #dc2626; margin-top: 15px; font-weight: 500; display: none;"></div>
+            <div class="loader" id="login-loader"></div>
+        </form>
+    </div>
+
+    <!-- Dashboard Main -->
+    <div id="dashboard">
+        <div class="header">
+            <h2>Portal Overview</h2>
+            <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 10px 25px;">Log Out</button>
+        </div>
+
+        <div class="loader" id="dash-loader"></div>
+
+        <div id="dash-content">
+            
+            <!-- 1. Profile -->
+            <div class="card">
+                <div class="section-title">👤 Student Profile</div>
+                <div class="flex-grid">
+                    <div>
+                        <h4 style="margin-bottom:10px; color:var(--primary);">Personal Details</h4>
+                        <div class="info-grid" id="profile-personal"></div>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom:10px; color:var(--primary);">Academic Roadmap</h4>
+                        <div class="info-grid" id="profile-academic"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Monthly Attendance (Moved below Profile!) -->
+            <div class="card">
+                <div class="action-row">
+                    <div class="section-title" style="margin:0;">📅 Monthly Attendance Log</div>
+                    <select id="month-selector" onchange="fetchMonthlyAttendance()" style="width: auto; margin:0;">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4" selected>April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+
+                <div class="summary-stats" id="monthly-stats"></div>
+                <div class="monthly-grid" id="monthly-card-grid"></div>
+            </div>
+
+            <!-- 3. Attendance Overview (Chart + Table) -->
+            <div class="flex-grid">
+                <div class="card">
+                    <div class="section-title">📊 Attendance Metrics</div>
+                    <canvas id="attendanceChart" style="max-height: 260px; margin-top: 15px;"></canvas>
+                </div>
+                <div class="card" style="overflow-x:auto;">
+                    <div class="section-title">📖 Subject Breakdown</div>
+                    <table>
+                        <thead>
+                            <tr><th>Subject</th><th>Type</th><th>Attended</th><th>%</th></tr>
+                        </thead>
+                        <tbody id="overall-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. Timetable & Notifications Grid -->
+            <div class="flex-grid">
+                <!-- Notifications -->
+                <div class="card">
+                    <div class="section-title">🔔 Recent Alerts</div>
+                    <div id="notifications-list"></div>
+                </div>
+                
+                <!-- Timetable -->
+                <div class="card">
+                    <div class="section-title">🗓️ Weekly Timetable</div>
+                    <div id="timetable-content"></div>
+                </div>
+            </div>
+
+            <!-- 5. Academic Calendar -->
+            <div class="card">
+                <div class="section-title">📆 Academic Calendar</div>
+                <div id="calendar-content"></div>
+            </div>
+            
+            <!-- 6. College Information (Hidden per user request) -->
+            <!-- <div class="card" id="college-info-card" style="display:none; background: linear-gradient(135deg, rgba(238,242,255,0.7), rgba(255,255,255,0.8));">
+                <div class="section-title">🏛️ College Information</div>
+                <div class="flex-grid" id="college-info-grid"></div>
+            </div> -->
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'https://apiedu.neurodev.in/';
+    let myChart = null;
+
+    // Boot
+    window.onload = () => {
+        if (localStorage.getItem('sessionId')) {
+            showDashboard();
+        }
+    };
+
+    // --- Authentication Flow ---
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const loader = document.getElementById('login-loader');
+        const errorDiv = document.getElementById('login-error');
+        
+        errorDiv.style.display = 'none';
+        loader.style.display = 'block';
+
+        try {
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            loader.style.display = 'none';
+            if (res.ok && data.sessionId) {
+                localStorage.setItem('sessionId', data.sessionId);
+                showDashboard();
+            } else {
+                errorDiv.innerText = data.error || data.message || 'Verification Failed';
+                errorDiv.style.display = 'block';
+            }
+        } catch (err) {
+            loader.style.display = 'none';
+            errorDiv.innerText = 'Server offline. Did you start node server.js?';
+            errorDiv.style.display = 'block';
+        }
+    });
+
+    function logout() {
+        const sessionId = localStorage.getItem('sessionId');
+        if (sessionId) {
+            fetch(`${API_URL}/auth/logout`, {
+                method: 'POST',
+                headers: { 'x-session-id': sessionId }
+            }).catch(console.error);
+        }
+        localStorage.removeItem('sessionId');
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('login-page').style.display = 'block';
+    }
+
+    // --- API Wrapper ---
+    async function fetchAuth(endpoint) {
+        const sessionId = localStorage.getItem('sessionId');
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            headers: { 'x-session-id': sessionId }
+        });
+        if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+        return res.json();
+    }
+
+    // Grid row templating
+    const makeRow = (label, val) => `<div class="info-label">${label}</div><div class="info-value">${val || '-'}</div>`;
+
+    // --- Dashboard Initializer ---
+    async function showDashboard() {
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('dash-loader').style.display = 'block';
+        document.getElementById('dash-content').style.display = 'none';
+
+        try {
+            // Load all modular backend APIs concurrently
+            const [profile, attendance, monthly, notifs, timetable, calendar] = await Promise.all([
+                fetchAuth('/api/profile').catch(e => ({ error: e.message, data: [] })),
+                fetchAuth('/api/attendance/overall').catch(e => ({ error: e.message, data: [] })),
+                fetchAuth('/api/attendance/monthly?month=4&session=2025-2026').catch(e => ({ error: e.message, data: [] })),
+                fetchAuth('/api/notifications').catch(e => ({ error: e.message, data: [] })),
+                fetchAuth('/api/timetable').catch(e => ({ error: true, message: e.message, data: [] })),
+                fetchAuth('/api/calendar').catch(e => ({ error: true, message: e.message, data: [] }))
+            ]);
+
+            // 1. Profile Data
+            const p = profile.data || profile;
+            const dtFmt = d => d ? new Date(d).toLocaleDateString() : 'N/A';
+            
+            document.getElementById('profile-personal').innerHTML = 
+                makeRow('Name', p.fullName) + makeRow('DOB', dtFmt(p.dob)) + makeRow('Gender', p.gender) +
+                makeRow('Phone', p.mobile) + makeRow('Email', p.email) + makeRow('Aadhaar', p.adharcardNo);
+                
+            document.getElementById('profile-academic').innerHTML = 
+                makeRow('Roll No', p.rollNo) + makeRow('Course', p.course?.courseFullName) +
+                makeRow('Branch', p.branch?.branchFullName) + makeRow('Semester/Year', `${p.currentSemester} / ${p.currentYear}`) +
+                makeRow('Group/Section', `${p.currentGroup} / ${p.currentSection}`) + makeRow('Admitted', dtFmt(p.admissionDate));
+
+            // 2. Overall Attendance
+            const aData = attendance.data || attendance;
+            let ovRows = '';
+            if(Array.isArray(aData)) {
+                aData.forEach(s => {
+                    const isTotal = s.subjectCode === 'ALL SUBJECTS';
+                    const color = s.subjectTotalPercentage < 75 ? '#dc2626' : '#166534';
+                    ovRows += `<tr style="${isTotal ? 'background:#f1f5f9;font-weight:700;' : ''}">
+                        <td>${s.subjectName || s.subjectCode}</td>
+                        <td><small>${s.lectureType || '-'}</small></td>
+                        <td>${s.subjectTotalClassesAttended || 0}/${s.subjectTotalClassesHeld || 0}</td>
+                        <td style="color:${color}; font-weight:600;">${s.subjectTotalPercentage || 0}%</td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('overall-table-body').innerHTML = ovRows || '<tr><td colspan="4">No data</td></tr>';
+            renderChart(aData);
+
+            // 3. Monthly Attendance Trigger
+            renderMonthlyAttendance(monthly);
+
+            // 4. Notifications
+            const nList = document.getElementById('notifications-list');
+            const nData = notifs.data || notifs;
+            if(Array.isArray(nData) && nData.length > 0) {
+                nList.innerHTML = nData.map(n => {
+                    const badge = n.isRead ? 'notif-read' : 'notif-unread';
+                    const attHTML = (n.attachments || n.files || n.attachment || n.fileUrl) ? 
+                        `<div style="margin-top:10px;">
+                            ${(Array.isArray(n.attachments)?n.attachments : Array.isArray(n.files)?n.files : [n.attachment||n.fileUrl]).filter(Boolean).map(f => 
+                                `<a href="${f.url||f.link||f}" target="_blank" style="font-size:0.8rem; background:#e0e7ff; color:var(--primary); padding:4px 10px; border-radius:6px; text-decoration:none; display:inline-block;">📎 View Upload</a>`
+                            ).join(' ')}
+                        </div>` : '';
+
+                    return `<div class="notif-item">
+                        <div style="display:flex; justify-content:space-between;">
+                            <strong style="color:var(--text-main);">${n.subject || 'System Alert'}</strong>
+                            <span class="notif-badge ${badge}">${n.isRead ? 'Read' : 'New'}</span>
+                        </div>
+                        <p style="font-size:0.9rem; color:var(--text-muted); margin-top:5px; line-height:1.4;">${n.message || '-'}</p>
+                        ${attHTML}
+                        <div style="font-size:0.75rem; color:#94a3b8; margin-top:10px;">${n.created_at ? new Date(n.created_at).toLocaleString() : ''}</div>
+                    </div>`;
+                }).join('');
+            } else {
+                nList.innerHTML = '<p style="color:var(--text-muted);">All caught up! No recent alerts.</p>';
+            }
+
+            // 5. Timetable
+            const ttData = timetable.data || timetable;
+            let ttHtml = '';
+            if (timetable.error) {
+                ttHtml = `<p style="color:red;">Error: ${timetable.message}</p>`;
+            } else if (Array.isArray(ttData) && ttData.length > 0) {
+                const daysMap = {1:'Monday', 2:'Tuesday', 3:'Wednesday', 4:'Thursday', 5:'Friday', 6:'Saturday', 7:'Sunday'};
+                const grouped = {};
+                
+                ttData.forEach(dayObj => {
+                    const d = parseInt(dayObj.weekDay);
+                    if (isNaN(d) || d === 0) return;
+                    if (!grouped[d]) grouped[d] = [];
+                    const slots = dayObj.timetables || dayObj.lectures || [];
+                    slots.forEach(slot => { if (slot.isLunch || (slot.lectures && slot.lectures.length > 0)) grouped[d].push(slot); });
+                });
+
+                for (let d = 1; d <= 7; d++) {
+                    if (!grouped[d] || grouped[d].length === 0) continue;
+                    ttHtml += `<div class="day-card" style="padding: 15px; margin-bottom:15px; border-radius:12px;">
+                        <h4 style="margin-bottom:10px; color:var(--primary); font-size:1.1rem; border-bottom:2px solid #ddd; padding-bottom:5px;">${daysMap[d]}</h4>
+                        <div class="lectures-grid">`;
+                    
+                    grouped[d].forEach(slot => {
+                        if (slot.isLunch) {
+                             ttHtml += `<div class="lec-card" style="background:#fef9c3; border-left:4px solid #ca8a04;">
+                                <div class="lec-code" style="color:#854d0e;">🍱 ${slot.lunchText || 'LUNCH'}</div>
+                                <div class="lec-meta">🕒 ${slot.slotTime || '-'}</div>
+                             </div>`;
+                             return;
+                        }
+                        slot.lectures.forEach(lec => {
+                            ttHtml += `<div class="lec-card" style="border-left:4px solid var(--primary-light);">
+                                <div class="lec-card-header">
+                                    <div class="lec-code" style="font-size:0.95rem;">${lec.subject?.subjectName || '-'}</div>
+                                </div>
+                                <div class="lec-meta" style="line-height:1.4; margin-top:5px;">
+                                    🕒 <b>${lec.timetable || slot.slotTime}</b> <br>
+                                    👩‍🏫 ${lec.user?.nickName || lec.user?.fullName || lec.faculty?.fullName || '-'} <br>
+                                    🏷️ <span style="background:#e2e8f0; padding:1px 5px; border-radius:4px;">${lec.lectureType || slot.subjectType || 'Class'}</span>
+                                </div>
+                            </div>`;
+                        });
+                    });
+                    ttHtml += `</div></div>`;
+                }
+            }
+            document.getElementById('timetable-content').innerHTML = ttHtml || '<p style="color:gray;">No weekly schedule found.</p>';
+
+            // 6. Academic Calendar Grid Widget
+            const calData = calendar.data || calendar;
+            if (calendar.error) {
+                document.getElementById('calendar-content').innerHTML = `<p style="color:red;">Error: ${calendar.message}</p>`;
+            } else if (Array.isArray(calData) && calData.length > 0) {
+                const dateKey = Object.keys(calData[0]).find(k => typeof calData[0][k] === 'string' && calData[0][k].match(/^\d{4}-\d{2}-\d{2}/)) || 'date';
+
+                // Map events onto YYYY-MM-DD keys
+                const evMap = {};
+                calData.forEach(item => {
+                    if(!item[dateKey]) return;
+                    const d = new Date(item[dateKey]);
+                    if(isNaN(d)) return;
+                    const dStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                    const isHoliday = Object.values(item).some(v => v === true || (typeof v === 'string' && v.toLowerCase() === 'holiday')) || !!item.isHoliday;
+                    evMap[dStr] = { isHoliday, text: item.title || item.holidayName || item.description || '' };
+                });
+                
+                const firstD = new Date(calData[0][dateKey]);
+                
+                // Expose globally so buttons can dynamically redraw calendar easily
+                window.renderCalGrid = (year, month) => {
+                    const firstDay = new Date(year, month, 1).getDay();
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const moNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                    
+                    let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:rgba(255,255,255,0.5); padding:10px; border-radius:8px;">
+                        <button class="btn" onclick="renderCalGrid(${month===0?year-1:year}, ${month===0?11:month-1})" style="width:auto; padding:5px 15px; font-size:0.9rem;">&laquo; Prev</button>
+                        <h3 style="margin:0; color:var(--primary);">${moNames[month]} ${year}</h3>
+                        <button class="btn" onclick="renderCalGrid(${month===11?year+1:year}, ${month===11?0:month+1})" style="width:auto; padding:5px 15px; font-size:0.9rem;">Next &raquo;</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; gap:5px; margin-bottom:8px;">
+                        ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div style="font-weight:700; color:var(--text-muted); font-size:0.85rem;">${d}</div>`).join('')}
+                    </div><div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:5px;">`;
+                    
+                    for(let i=0; i<firstDay; i++) html += `<div></div>`; 
+                    
+                    for(let d=1; d<=daysInMonth; d++) {
+                        const dStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+                        const ev = evMap[dStr];
+                        const bg = ev ? (ev.isHoliday ? '#fee2e2' : '#e0e7ff') : '#ffffff';
+                        const col = ev ? (ev.isHoliday ? '#991b1b' : 'var(--primary)') : 'var(--text-main)';
+                        const border = ev ? `border:1px solid ${bg}` : 'border:1px solid #f3f4f6';
+                        
+                        html += `<div style="${border}; background:${bg}; color:${col}; padding:4px 2px; border-radius:4px; display:flex; flex-direction:column; align-items:center; box-shadow:0 1px 2px rgba(0,0,0,0.05); min-height:45px;">
+                            <span style="font-size:1rem; font-weight:700;">${d}</span>
+                            ${ev && ev.text ? `<span style="font-size:0.6rem; line-height:1.2; margin-top:2px; max-height:15px; overflow:hidden;" title="${ev.text}">${ev.text}</span>` : ''}
+                        </div>`;
+                    }
+                    html += `</div>`;
+                    document.getElementById('calendar-content').innerHTML = html;
+                };
+                
+                window.renderCalGrid(firstD.getFullYear(), firstD.getMonth());
+            } else {
+                document.getElementById('calendar-content').innerHTML = '<p style="color:gray;">No events in academic calendar.</p>';
+            }
+
+            document.getElementById('dash-loader').style.display = 'none';
+            document.getElementById('dash-content').style.display = 'block';
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // --- Dynamic Monthly Fetcher ---
+    async function fetchMonthlyAttendance() {
+        const month = document.getElementById('month-selector').value;
+        const grid = document.getElementById('monthly-card-grid');
+        grid.innerHTML = '<p>Loading latest logs...</p>';
+        
+        try {
+            const data = await fetchAuth(`/api/attendance/monthly?month=${month}&session=2025-2026`).catch(e => ({ error: true, message: e.message, data: [] }));
+            renderMonthlyAttendance(data);
+        } catch (err) {
+            grid.innerHTML = `<p style="color:red;">Network Failure</p>`;
+        }
+    }
+
+    function renderMonthlyAttendance(monthly) {
+        const grid = document.getElementById('monthly-card-grid');
+        if (monthly.error) {
+             grid.innerHTML = `<p style="color:red;">Failed to retrieve logs: ${monthly.message}</p>`;
+             return;
+        }
+
+        let mData = monthly.data;
+        if(!mData && Array.isArray(monthly)) mData = monthly;
+
+        document.getElementById('monthly-stats').innerHTML = `
+            <div class="stat-box green"><h4>✨ Present</h4><div class="val" style="color:#166534;">${monthly.presentDays || 0}</div></div>
+            <div class="stat-box red"><h4>⚠️ Absent</h4><div class="val" style="color:#991b1b;">${monthly.absentDays || 0}</div></div>
+            <div class="stat-box yellow"><h4>📚 Total Held</h4><div class="val" style="color:#854d0e;">${monthly.lectures?.length || 0}</div></div>
+        `;
+
+        let cHtml = '';
+        if (Array.isArray(mData)) {
+            mData.forEach(day => {
+               if(day.attendances && day.attendances.length > 0) {
+                   const rawDate = day.attendanceDate || day.date || day.day;
+                   const dateStr = rawDate ? new Date(rawDate).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : 'Unknown Date';
+                   
+                   cHtml += `<div class="day-card">
+                        <h4>📅 ${dateStr}</h4>
+                        <div class="lectures-grid">`;
+                        
+                   day.attendances.forEach(att => {
+                       const isP = att.status === 'P';
+                       const badgeText = isP ? '✓ Present' : '✕ Absent';
+                       const borderL = isP ? '#22c55e' : '#ef4444';
+                       const badgeClass = isP ? 'status-p' : 'status-a';
+                       
+                       cHtml += `<div class="lec-card" style="border-left: 4px solid ${borderL};">
+                           <div class="lec-card-header">
+                                <div class="lec-code">${att.subjectCode || 'Subject'}</div>
+                                <div class="att-status ${badgeClass}">${badgeText}</div>
+                           </div>
+                           <div class="lec-meta">
+                                🕒 ${att.timetable || '-'} <br>
+                                🏷️ ${att.lectureType || 'Class'}
+                           </div>
+                       </div>`;
+                   });
+                   
+                   cHtml += `</div></div>`;
+               }
+            });
+        }
+        grid.innerHTML = cHtml || '<p style="color:var(--text-muted); width:100%;">No attendance records found for this period.</p>';
+    }
+
+    function renderChart(attendanceData) {
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        if (!Array.isArray(attendanceData)) return;
+
+        const filtered = attendanceData.filter(a => a.subjectCode !== 'ALL SUBJECTS');
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: filtered.map(a => a.subjectCode || 'Sub'),
+                datasets: [{
+                    label: 'Attendance Rate %',
+                    data: filtered.map(a => parseFloat(a.subjectTotalPercentage) || 0),
+                    backgroundColor: filtered.map(a => (a.subjectTotalPercentage < 75) ? 'rgba(239, 68, 68, 0.85)' : 'rgba(79, 70, 229, 0.85)'),
+                    borderRadius: 6
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+    }
+</script>
+</body>
+</html>
